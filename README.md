@@ -71,7 +71,7 @@ You will primarily need three files:
 
 The OpenAI API key must be kept secret and should only be stored on the server side (in api_proxy.php or, ideally, in an environment variable).
 
-In api_proxy.php:
+In asg.php:
 
 Securely define your OpenAI API Key.
 
@@ -96,6 +96,7 @@ The JavaScript will then parse the JSON response returned by api_proxy.php and d
 Place the files in your web server's root directory.
 
 Ensure your PHP server is running.
+PHP asg2.php
 
 Navigate to http://localhost/index.html (or your server's public IP).
 
