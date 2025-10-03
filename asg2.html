@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>DuJuan's Assignment 2</title>
+    <style>
+        .formTable th {
+            border: 1px solid black;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .formTable {
+            width: 600px;
+            margin: 20px auto;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .formTable td {
+            border: 1px solid black;
+            padding: 10px;
+            text-align: left;
+
+        }
+
+        .formTable input {
+            width: 95%;
+            padding: 6px;
+            box-sizing: border-box;
+
+        }
+
+        #myBtn {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+
+        #myTable {
+            table-layout: fixed;
+            width: 80%;
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+
+        #myTable td {
+            border: 1px solid black;
+            text-align: center;
+            padding: 8px;
+            min-height: 20px;
+            /* Ensures cell has visible height */
+        }
+
+        #myTable td:empty::after {
+            content: "\00a0";
+            /* Non-breaking space forces cell to render */
+        }
+
+
+
+        .popup-overlay {
+            display: none;
+            /* Hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            /* dimmed background */
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .popup-box {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            max-width: 400px;
+            position: relative;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            font-family: sans-serif;
+            text-align: center;
+        }
+
+        /* [x] Close button */
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <form id="myForm"> <!-- My Form that takes in the input from the user inside a table-->
+        <table class="formTable">
+            <tr>
+                <th colspan="3"> <!-- spans 3 column-->
+                    Adaptive Montlhly Calendar
+                </th>
+            </tr>
+            <tr>
+                <td><label for="dayL">Start Day:</label></td>
+                <td> <label for="MonthL">Month:</label> </td>
+                <td> <label for="yearl">Year:</label></td>
+            </tr>
+            <tr>
+                <td><input type="text" id="stDay" placeholder="Day: (Mon, Tue, ...)"></td>
+                <!-- The input area where the data from the user is stored -->
+                <td><input type="text" id="mth" placeholder="Enter full month name"></td>
+                <td> <input type="text" id="year" placeholder="Enter a year(1900-2025)"></td>
+
+            </tr>
+            <tr>
+                <td colspan="3"> <input type="submit" value="Submit" id="myBtn"></td>
+                <!-- The sumbit button triggers the  javascript for te calendar -->
+
+            </tr>
+        </table>
+    </form>
+
+    <div id="tableCon"></div> <!-- The div for the calendar to go -->
+
+
+    <div id="popupOverlay" class="popup-overlay"> <!-- the popup div for the overlay for chatgpt -->
+        <div class="popup-box">
+            <span class="close-btn" onclick="hidePopup()">&times;</span>
+            <div id="popupContent">This is the popup message</div>
+        </div>
+    </div>
+
+    <script>
+        // variables 
+
+        let daysOfWeek = [];    // <-- stores the location of calendar days and space  ex: Mon x Tue...
+
+        let counter = 1;   // <-- counter for my calendar start a 1 like all calendars
+
+
+
+        function showPopup(message) {                                               //Popup function for the overlay    
+            document.getElementById("popupContent").innerText = message;
+            document.getElementById("popupOverlay").style.display = "flex";
+        }
+
+        function hidePopup() {
+            document.getElementById("popupOverlay").style.display = "none";       //Hide popup function when  the x is click
+        }
+
+        //My function for creating the regular rows( the rows after the first that have numbers) for my calendar
+        function regularRow(day) {
+            const table = document.getElementById("myTable");       //gets my table and creates a row
+            const newRow = document.createElement("tr");
+
+            for (let i = 0; i < 13; i++) {                               //runs 13 times for amount of columns
+                const newCell = document.createElement("td");
+
+                if (daysOfWeek[i] == "x") {                        //using dayOFweek array :(Mon X Tues X ...) to determine whether to add a blank to the cell
+                    newCell.textContent = ""; // Leave blank
+                    newRow.appendChild(newCell);
+
+
+                }
+                else if (daysOfWeek[i] != "x" && counter <= day) {       //add the numbers to  the cell based on if there is no x in that spot in that array and as long as there are days left for
+                    newCell.textContent = "" + counter; // Leave blank
+                    newRow.appendChild(newCell);
+                    start = true;
+                    counter++;   //counter  for keeping track of the days 
+
+                    newCell.classList.add("date-cell"); // Add a class for styling or targeting
+                    newCell.style.cursor = "pointer";
+                    newCell.addEventListener("click", () => {          //makes the cell clickable the cells with number                         
+                        const day = newCell.textContent;
+                        const month = document.getElementById("mth").value;
+                        const year = document.getElementById("year").value;
+
+
+                        const question = `What major events happened on ${month} ${day}, ${year}?`;   //the question that goes to Chatgpt
+
+
+                        callChatGPTviaPHP(question);  // calling the function with the message
+
+
+                    });
+
+
+                }
+                else if (daysOfWeek[i] != "x" && counter > day) {     //if counter is greater than the last day of that month ...
+                    newCell.textContent = ""; // Leave blank
+                    newRow.appendChild(newCell);
+
+
+
+                }
+
+
+            }
+
+            table.appendChild(newRow);
+        }
+
+
+        function getLastDayOfMonth(year, month) {   // return the last day of the month takes month and year as parameters
+
+            if (typeof month === "string") {
+                const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                month = months.indexOf(month);  // Convert  month (1 = January, 12 = December)
+            }
+
+            return new Date(year, month + 1, 0).getDate();
+        }
+
+        function addFirstRow(day) {
+            const table = document.getElementById("myTable");
+            const newRow = document.createElement("tr");
+            let start = false;
+
+
+
+            for (let i = 0; i < daysOfWeek.length; i++) {
+                const newCell = document.createElement("td");
+
+
+                if (day != daysOfWeek[i] && start === false || daysOfWeek[i] == "x") {
+                    newCell.textContent = ""; // Leave blank
+                    newRow.appendChild(newCell);
+                }
+                else if (start == false && day == daysOfWeek[i]) {
+
+                    newCell.textContent = "" + counter; // Leave blank
+                    newRow.appendChild(newCell);
+                    start = true;
+                    counter++;
+
+
+                    newCell.classList.add("date-cell"); // Add a class for styling or targeting
+                    newCell.style.cursor = "pointer";   // Optional: make it look clickable
+                    newCell.addEventListener("click", () => {
+                        const day = newCell.textContent;
+                        const month = document.getElementById("mth").value;
+                        const year = document.getElementById("year").value;
+                        //showEventOverlay(day, month, year);
+
+                        const question = `What major events happened on ${month} ${day}, ${year}?`;
+                        //callChatGPT(question)
+
+                        callChatGPTviaPHP(question);
+
+                    });
+
+                }
+                else if (start == true && daysOfWeek[i] !== "x") {
+                    newCell.textContent = "" + counter; // Leave blank
+                    newRow.appendChild(newCell);
+                    counter++;
+
+
+                    newCell.classList.add("date-cell"); // Add a class for styling or targeting
+                    newCell.style.cursor = "pointer";   // Optional: make it look clickable
+                    newCell.addEventListener("click", () => {
+                        const day = newCell.textContent;
+                        const month = document.getElementById("mth").value;
+                        const year = document.getElementById("year").value;
+                        //showEventOverlay(day, month, year);
+
+                        const question = `What major events happened on ${month} ${day}, ${year}?`;
+
+
+                        callChatGPTviaPHP(question);
+
+                    });
+                }
+
+
+            }
+
+            table.appendChild(newRow);
+
+
+        }
+        //get the first day of the month 
+        function getFirstDayName(year, month) {
+            // If the month is a string, convert it to a number (1 = January, 12 = December)
+            if (typeof month === "string") {
+                const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                month = months.indexOf(month) + 1;  // Convert to (1 = January, 12 = December)
+            }
+
+
+            const date = new Date(year, month - 1, 1);  // month - 1 converts it to 0-indexed
+            const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            return days[date.getDay()];
+        }
+        // add a the blank row function
+        function addBlankRow() {
+            const table = document.getElementById("myTable");
+            const newRow = document.createElement("tr");
+
+            for (let i = 0; i < 13; i++) {
+                const newCell = document.createElement("td");      // loop throug each column
+                newCell.textContent = ""; // Leave blank
+                newRow.appendChild(newCell);
+            }
+
+            table.appendChild(newRow);
+        }
+
+        function formCheck(day,month,year)       // check if the user entered valid information for  the day month year
+        {
+            let year2 = parseInt(year);
+            let months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+
+            let month2=month.toLowerCase();
+
+            let pass=false;
+
+            for(let i =0;i<months.length;i++)
+            {   
+                
+                if(month2==months[i])
+                {
+                    pass=true;
+                }
+                    
+            }
+            if(pass==false)
+            {
+                return false;
+            }
+            else if(dayNum(day)==-1)
+                return false;
+            
+            else if(year<=2025&&year>=1900)
+                return true;
+
+        }
+
+        function dayNum(day) {
+            let day1 = day.toLowerCase();          // converts the days to a number I use this to make the day headers for  the calendar
+
+            switch (day1) {
+                case "mon": return 1;
+                case "tue": return 2;
+                case "wed": return 3;
+                case "thu": return 4;
+                case "fri": return 5;
+                case "sat": return 6;
+                case "sun": return 7;
+                default: return -1;
+            }
+
+        }
+
+        function dayR(num) {        //returns a number as a number easy for me to loop through days a 
+            switch (num) {
+                case 1: return "Mon";
+                case 2: return "Tue";
+                case 3: return "Wed";
+                case 4: return "Thu";
+                case 5: return "Fri";
+                case 6: return "Sat";
+                case 7: return "Sun";
+                default: return "Error: Something wennt wrong";
+            }
+
+        }
+
+        function clearCalendar() {
+            const calendarTable = document.getElementById("tableCon");   //function that help clear my calendar
+
+            calendarTable.innerHTML = "";      // grabs the id where my calenadar is and clear the inner html
+        }
+
+        //when submit is pressed
+
+        document.getElementById("myForm").addEventListener("submit", function (event) {
+            event.preventDefault(); // Prevent actual form submission
+
+            // resets variable if the submited  multple times
+            daysOfWeek = [];   // clear array
+            counter = 1;
+            clearCalendar();
+
+            const starDay = document.getElementById("stDay").value;    //grabing user data from the form
+            const month = document.getElementById("mth").value;
+            const year = document.getElementById("year").value;
+
+            if(formCheck(starDay,month,year)) // checks user input before continuing
+            {
+
+            let lastDay = getLastDayOfMonth(year, month);      // calculating last day and month
+
+            let firstDay = getFirstDayName(year, month);
+
+            const table = document.createElement("table");              // creating a table adding a bording to it ...
+            table.border = "1";
+            table.id = "myTable";
+
+            let dayloop = dayNum(starDay);    //converting day to a number   that I can use 
+            const row = document.createElement("tr");
+
+
+            for (let i = dayloop; i <= 7; i++) {
+                const newCell = document.createElement("td");
+                const newCell2 = document.createElement("td");
+
+
+
+                newCell.textContent = dayR(i);     // convert the number to a day for the header of calendar
+                row.appendChild(newCell);
+                daysOfWeek.push(dayR(i));       // appending and adding the day to an array 
+
+                if (!(i == 7 && dayloop == 1))    // if the start was not monday and the loop didn't reach the end do...
+                {
+                    newCell2.textContent = "";
+                    row.appendChild(newCell2);
+                    daysOfWeek.push("x");
+                }
+
+            }
+            table.appendChild(row);
+
+            if (dayloop != 1) {
+
+                for (let i = 1; i < dayloop; i++) {                      //looping for the rest of the days going backwards
+                    const newCell2 = document.createElement("td");
+
+
+                    const newCell = document.createElement("td");
+
+
+                    newCell.textContent = dayR(i);
+                    row.appendChild(newCell);
+                    daysOfWeek.push(dayR(i));
+
+                    if (i + 1 < dayloop) {
+                        daysOfWeek.push("x");               // if not close to the end do this
+
+
+                        newCell2.textContent = "";
+                        row.appendChild(newCell2);
+                    }
+
+                }
+
+            }
+
+            table.appendChild(row);  // adding  the row th=o the table
+
+
+            const container = document.getElementById("tableCon");
+            container.innerHTML = "";
+            container.appendChild(table);                           //adding the table to it's location
+            addBlankRow();
+
+            addFirstRow(firstDay);         // adding the  other sections to the calender  li
+            while (counter <= lastDay) {
+                addBlankRow();
+                regularRow(lastDay);
+
+            }}
+            else{
+               showPopup("Please Enter the correct information Day: Mon-Sun Month: Full month name Year: 1900-2025");   // error message 
+            }
+        });
+
+
+        function callChatGPTviaPHP(message) {                 //php chagpt function takes the message(the day click)  as parameter
+            // Verify question for chatGPT
+            const query = message.trim();           // 
+            if (query == "") {
+                alert("Specify at least one question");
+                return;
+            }
+            // fetch() returns a promisei (i.e. async/does not wait). And when a
+
+            // the associated .then of the fetch is called with the response
+            fetch("asg2.php?&query=" + encodeURIComponent(query))
+
+
+                .then(response => response.text())
+                .then(result => {
+                    showPopup(result);          //<-- uses my overlay when response result are a sucess
+
+                })
+                .catch(error => {                                //error 
+                    console.error("Fetch error:", error);
+                    showPopup("Error: " + error.message);
+                });
+        }
+    </script>
+
+</body>
+
+</html>
